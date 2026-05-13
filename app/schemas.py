@@ -34,6 +34,10 @@ class ConfigUpdate(BaseModel):
     bm25_b: float | None = Field(default=None, ge=0, le=1)
     rerank_original_score_weight: float | None = Field(default=None, ge=0, le=1)
     rerank_term_coverage_weight: float | None = Field(default=None, ge=0, le=1)
+    rerank_provider: str | None = None
+    rerank_base_url: str | None = None
+    rerank_model: str | None = None
+    rerank_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
     local_answer_min_score: float | None = Field(default=None, ge=0, le=1)
     local_answer_relative_score: float | None = Field(default=None, ge=0, le=1)
     local_answer_max_contexts: int | None = Field(default=None, ge=1, le=20)

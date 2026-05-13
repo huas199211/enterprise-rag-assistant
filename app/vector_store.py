@@ -12,6 +12,7 @@ from sqlalchemy import text
 from .config import get_settings
 from .db import db, get_runtime_config
 from .embeddings import embed_text, tokenize
+from .reranker import rerank_hits
 
 
 @dataclass
@@ -63,7 +64,7 @@ class VectorStore:
         bm25_hits = self._bm25_search(query, candidate_limit)
         hits = self._hybrid_fuse(vector_hits, bm25_hits, config)
         if rerank:
-            hits = self._rerank(query, hits)
+            hits = rerank_hits(query, hits, config)
         return hits[:top_k]
 
     def _vector_search(self, query: str, limit: int) -> list[SearchHit]:
@@ -184,23 +185,6 @@ class VectorStore:
             collection_name=self.collection,
             vectors_config=models.VectorParams(size=self.vector_size, distance=models.Distance.COSINE),
         )
-
-    def _rerank(self, query: str, hits: list[SearchHit]) -> list[SearchHit]:
-        config = get_runtime_config()
-        original_score_weight = float(config["rerank_original_score_weight"])
-        term_coverage_weight = float(config["rerank_term_coverage_weight"])
-        weight_sum = max(original_score_weight + term_coverage_weight, 0.0001)
-        query_terms = Counter(tokenize(query))
-        reranked = []
-        for hit in hits:
-            doc_terms = Counter(tokenize(hit.text))
-            overlap = sum(min(query_terms[t], doc_terms[t]) for t in query_terms)
-            coverage = overlap / max(1, sum(query_terms.values()))
-            score = (hit.score * original_score_weight + coverage * term_coverage_weight) / weight_sum
-            reranked.append(SearchHit(hit.chunk_id, hit.text, score, hit.metadata))
-        reranked.sort(key=lambda hit: hit.score, reverse=True)
-        return reranked
-
 
 def _ensure_local_no_proxy() -> None:
     settings = get_settings()

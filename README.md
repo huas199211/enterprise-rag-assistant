@@ -76,6 +76,17 @@ EMBEDDING_DIMENSIONS=1024
 DEFAULT_MIN_SCORE=0.18
 ```
 
+## 重排序配置
+
+默认使用本地词覆盖重排序，不依赖外部服务。生产环境可以把 `RERANK_PROVIDER` 改为 `remote`，并配置兼容 `/rerank` 接口的重排序服务。
+
+```env
+RERANK_PROVIDER=local
+RERANK_BASE_URL=
+RERANK_API_KEY=
+RERANK_MODEL=BAAI/bge-reranker-v2-m3
+```
+
 ## API
 
 - `POST /api/documents/upload` 上传并入库
@@ -86,7 +97,14 @@ DEFAULT_MIN_SCORE=0.18
 - `GET /api/config` 查看配置
 - `POST /api/config` 更新配置
 - `GET /api/logs` 查看问答日志
-- `POST /api/evaluate` 运行评估集
+- `POST /api/evaluate` 运行评估集，返回关键词命中、来源覆盖、召回命中率、拒答率和耗时指标
+
+## 测试和评估
+
+```powershell
+python -m unittest discover -s tests
+python -c "import asyncio, json; from app.evaluation import run_evaluation; print(json.dumps(asyncio.run(run_evaluation()), ensure_ascii=False, indent=2))"
+```
 
 ## 演示问题
 
@@ -99,5 +117,5 @@ DEFAULT_MIN_SCORE=0.18
 
 1. 增加混合检索：向量召回 + BM25。
 2. 接入真实重排序模型。
-3. 完善评估指标：召回命中率、引用准确率、拒答率、耗时。
+3. 持续完善评估指标：引用准确率、不同检索策略对比、按问题类型分组统计。
 4. 增加权限、部门知识库隔离、审计日志。

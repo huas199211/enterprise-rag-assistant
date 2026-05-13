@@ -63,7 +63,7 @@ def _openai_compatible_embed(text: str, model: str, dimensions: int) -> list[flo
         data = response.json()
     vector = [float(value) for value in data["data"][0]["embedding"]]
     if len(vector) != dimensions:
-        raise ValueError(f"Embedding dimensions mismatch: expected {dimensions}, got {len(vector)}")
+        raise ValueError(f"向量维度不匹配：期望 {dimensions}，实际 {len(vector)}")
     return _normalize(vector)
 
 

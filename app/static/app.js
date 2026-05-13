@@ -22,6 +22,9 @@ async function loadConfig() {
   $("embeddingProvider").value = config.embedding_provider;
   $("embeddingModel").value = config.embedding_model;
   $("embeddingDimensions").value = config.embedding_dimensions;
+  $("rerankProvider").value = config.rerank_provider;
+  $("rerankBaseUrl").value = config.rerank_base_url;
+  $("rerankModel").value = config.rerank_model;
   $("rerank").checked = Boolean(config.rerank);
 }
 
@@ -92,6 +95,9 @@ $("saveConfig").addEventListener("click", async () => {
     embedding_provider: $("embeddingProvider").value.trim(),
     embedding_model: $("embeddingModel").value.trim(),
     embedding_dimensions: Number($("embeddingDimensions").value),
+    rerank_provider: $("rerankProvider").value.trim(),
+    rerank_base_url: $("rerankBaseUrl").value.trim(),
+    rerank_model: $("rerankModel").value.trim(),
     rerank: $("rerank").checked,
   };
   await api("/api/config", {
@@ -155,7 +161,15 @@ $("runEval").addEventListener("click", async () => {
   $("evalResult").textContent = "正在运行评估...";
   try {
     const result = await api("/api/evaluate", { method: "POST" });
-    $("evalResult").textContent = `${result.count} 条，平均关键词命中 ${result.avg_keyword_score}，耗时 ${result.latency_ms} 毫秒`;
+    const fallbackLatency = result.p95_latency_ms ?? result.avg_latency_ms ?? result.latency_ms;
+    $("evalResult").textContent = [
+      `${result.count} 条`,
+      `答案关键词命中 ${formatMetric(result.avg_keyword_score)}`,
+      `来源关键词覆盖 ${formatMetric(result.avg_source_keyword_score)}`,
+      `召回命中率 ${formatMetric(result.retrieval_hit_rate)}`,
+      `拒答率 ${formatMetric(result.refusal_rate)}`,
+      `P95 耗时 ${formatMetric(fallbackLatency)} 毫秒`,
+    ].join(" · ");
   } catch (error) {
     $("evalResult").textContent = error.message;
   }
@@ -177,6 +191,10 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function formatMetric(value) {
+  return value === undefined || value === null ? "暂无数据" : value;
 }
 
 function statusLabel(status) {

@@ -18,6 +18,9 @@ SYSTEM_PROMPT = """你是企业知识库助手。只根据给定资料回答。
 
 async def generate_answer(question: str, contexts: list[dict], history: list[dict], provider: str, model: str) -> str:
     if provider == "openai_compatible":
+        settings = get_settings()
+        if not settings.openai_api_key:
+            return _local_answer(question, contexts)
         try:
             return await _openai_compatible_answer(question, contexts, history, model)
         except httpx.HTTPStatusError as exc:
@@ -69,8 +72,6 @@ def _best_snippet(question: str, text: str) -> str:
 async def _openai_compatible_answer(question: str, contexts: list[dict], history: list[dict], model: str) -> str:
     settings = get_settings()
     config = get_runtime_config()
-    if not settings.openai_api_key:
-        return "我不知道。当前未配置 OPENAI_API_KEY，无法调用模型生成答案。"
     context_text = "\n\n".join(
         f"[来源{idx}] 文件：{item['metadata'].get('filename')}，片段：\n{item['text']}"
         for idx, item in enumerate(contexts, start=1)
