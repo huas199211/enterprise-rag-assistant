@@ -106,6 +106,8 @@ python -m unittest discover -s tests
 python -c "import asyncio, json; from app.evaluation import run_evaluation; print(json.dumps(asyncio.run(run_evaluation()), ensure_ascii=False, indent=2))"
 ```
 
+当前测试覆盖基础分词、评估指标、本地/远程重排序回退，以及配置、问答、上传、重建索引、反馈、评估等 API 路由。
+
 ## 演示问题
 
 ```text
