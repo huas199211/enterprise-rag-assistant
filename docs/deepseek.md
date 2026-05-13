@@ -25,4 +25,4 @@ CHAT_MODEL=deepseek-v4-flash
 
 ## 向量模型
 
-DeepSeek 主要用于聊天补全。本项目中文向量检索默认配置为 `BAAI/bge-m3`，维度 `1024`。开发环境使用本地备用向量化，生产环境可以接入支持 `BAAI/bge-m3` 且兼容 OpenAI 格式的向量服务。
+DeepSeek 主要用于聊天补全。本项目中文向量检索默认配置为 `BAAI/bge-m3`，维度 `1024`。默认 `EMBEDDING_PROVIDER=local` 会通过 `transformers + torch` 在本地加载真实 BGE-M3 模型；也可以切换为支持 `BAAI/bge-m3` 且兼容 OpenAI 格式的向量服务。

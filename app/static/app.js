@@ -18,14 +18,18 @@ function withRequestContext(options = {}) {
   if (accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`);
   }
-  headers.set("X-User-Id", $("userId")?.value.trim() || "system");
-  headers.set("X-User-Name", $("userName")?.value.trim() || "系统用户");
-  headers.set("X-User-Role", $("userRole")?.value.trim() || "admin");
+  headers.set("X-User-Id", encodeHeaderValue($("userId")?.value.trim() || "system"));
+  headers.set("X-User-Name", encodeHeaderValue($("userName")?.value.trim() || "系统用户"));
+  headers.set("X-User-Role", encodeHeaderValue($("userRole")?.value.trim() || "admin"));
   const departmentId = $("departmentId")?.value.trim();
   if (departmentId) {
     headers.set("X-Department-Id", departmentId);
   }
   return { ...options, headers };
+}
+
+function encodeHeaderValue(value) {
+  return encodeURIComponent(value);
 }
 
 $("loginButton").addEventListener("click", async () => {

@@ -64,6 +64,9 @@ class ConfigUpdate(BaseModel):
     embedding_provider: str | None = None
     embedding_model: str | None = None
     embedding_dimensions: int | None = Field(default=None, ge=64, le=4096)
+    bge_m3_use_fp16: bool | None = None
+    bge_m3_batch_size: int | None = Field(default=None, ge=1, le=128)
+    bge_m3_max_length: int | None = Field(default=None, ge=128, le=8192)
     vector_candidate_multiplier: int | None = Field(default=None, ge=1, le=20)
     hybrid_vector_weight: float | None = Field(default=None, ge=0, le=1)
     hybrid_bm25_weight: float | None = Field(default=None, ge=0, le=1)

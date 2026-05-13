@@ -67,14 +67,19 @@ CHAT_MODEL=deepseek-v4-flash
 
 ## 中文向量模型配置
 
-中文知识库默认使用 `BAAI/bge-m3` 配置，维度 `1024`。开发环境可以使用本地备用向量化，生产环境可接入兼容 OpenAI 格式的向量服务。
+中文知识库默认使用 `BAAI/bge-m3` 配置，维度 `1024`。`EMBEDDING_PROVIDER=local` 会通过 `transformers + torch` 在本地加载真实 BGE-M3 模型，不再使用哈希备用向量。首次运行会从模型仓库下载模型文件，CPU 可运行但速度较慢；有 GPU 时可把 `BGE_M3_USE_FP16` 改为 `true`。
 
 ```env
 EMBEDDING_PROVIDER=local
 EMBEDDING_MODEL=BAAI/bge-m3
 EMBEDDING_DIMENSIONS=1024
+BGE_M3_USE_FP16=false
+BGE_M3_BATCH_SIZE=12
+BGE_M3_MAX_LENGTH=8192
 DEFAULT_MIN_SCORE=0.18
 ```
+
+如果只是做无模型依赖的接口调试，可以临时设置 `EMBEDDING_PROVIDER=hash`，但该模式不是语义向量，检索效果不能代表 BGE-M3。
 
 ## 重排序配置
 

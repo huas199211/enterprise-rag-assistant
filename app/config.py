@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     embedding_provider: str = "local"
     embedding_model: str = "BAAI/bge-m3"
     embedding_dimensions: int = 1024
+    bge_m3_use_fp16: bool = False
+    bge_m3_batch_size: int = 12
+    bge_m3_max_length: int = 8192
 
     default_chunk_size: int = 800
     default_chunk_overlap: int = 120

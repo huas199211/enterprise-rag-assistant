@@ -1,6 +1,14 @@
 import unittest
 
-from app.security import RequestContext, create_access_token, hash_password, parse_access_token, system_context, verify_password
+from app.security import (
+    RequestContext,
+    _decode_header_value,
+    create_access_token,
+    hash_password,
+    parse_access_token,
+    system_context,
+    verify_password,
+)
 
 
 class SecurityTest(unittest.TestCase):
@@ -29,6 +37,9 @@ class SecurityTest(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual("u1", parsed.user_id)
         self.assertEqual(1, parsed.department_id)
+
+    def test_encoded_header_value_can_restore_chinese_text(self) -> None:
+        self.assertEqual("系统用户", _decode_header_value("%E7%B3%BB%E7%BB%9F%E7%94%A8%E6%88%B7"))
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import json
 import secrets
 import time
 from dataclasses import dataclass
+from urllib.parse import unquote
 
 from fastapi import Request
 
@@ -37,11 +38,20 @@ def get_request_context(request: Request) -> RequestContext:
         return token_context
     department_id = _parse_department_id(request.headers.get("x-department-id"))
     return RequestContext(
-        user_id=request.headers.get("x-user-id") or "system",
-        user_name=request.headers.get("x-user-name") or "系统用户",
-        role=(request.headers.get("x-user-role") or "admin").lower(),
+        user_id=_decode_header_value(request.headers.get("x-user-id")) or "system",
+        user_name=_decode_header_value(request.headers.get("x-user-name")) or "系统用户",
+        role=(_decode_header_value(request.headers.get("x-user-role")) or "admin").lower(),
         department_id=department_id,
     )
+
+
+def _decode_header_value(value: str | None) -> str | None:
+    if not value:
+        return None
+    try:
+        return unquote(value)
+    except ValueError:
+        return value
 
 
 def _parse_department_id(value: str | None) -> int | None:
