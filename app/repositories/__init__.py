@@ -1,5 +1,68 @@
-from .documents import list_documents
+from .access_control import (
+    assign_permission_to_role,
+    assign_role_to_user,
+    authenticate_user,
+    create_department,
+    create_permission,
+    create_position,
+    create_role,
+    create_user,
+    ensure_request_user,
+    list_audit_logs,
+    list_departments,
+    list_permissions,
+    list_positions,
+    list_roles,
+    list_users,
+    seed_default_auth_data,
+    user_permissions,
+    write_audit_log,
+)
+from .chunks import delete_chunks_by_document_id, insert_chunk, list_chunks_by_document_id
+from .documents import (
+    create_document_record,
+    document_is_visible,
+    get_document,
+    list_documents,
+    mark_document_indexed,
+    update_document_status,
+    visible_document_ids,
+)
 from .feedback import create_feedback
-from .messages import list_message_logs
+from .messages import create_message, ensure_conversation, list_message_logs, load_history
 
-__all__ = ["create_feedback", "list_documents", "list_message_logs"]
+__all__ = [
+    "create_department",
+    "create_document_record",
+    "create_feedback",
+    "create_permission",
+    "create_position",
+    "create_role",
+    "create_message",
+    "create_user",
+    "delete_chunks_by_document_id",
+    "document_is_visible",
+    "ensure_conversation",
+    "ensure_request_user",
+    "get_document",
+    "insert_chunk",
+    "list_audit_logs",
+    "list_chunks_by_document_id",
+    "list_departments",
+    "list_documents",
+    "list_message_logs",
+    "list_permissions",
+    "list_positions",
+    "list_roles",
+    "list_users",
+    "load_history",
+    "mark_document_indexed",
+    "seed_default_auth_data",
+    "assign_permission_to_role",
+    "assign_role_to_user",
+    "authenticate_user",
+    "user_permissions",
+    "update_document_status",
+    "visible_document_ids",
+    "write_audit_log",
+]

@@ -1,16 +1,61 @@
 let conversationId = null;
 let currentMessageId = null;
+let accessToken = localStorage.getItem("accessToken") || "";
 
 const $ = (id) => document.getElementById(id);
 
 async function api(path, options = {}) {
-  const response = await fetch(path, options);
+  const response = await fetch(path, withRequestContext(options));
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(data.detail || response.statusText);
   }
   return response.json();
 }
+
+function withRequestContext(options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+  headers.set("X-User-Id", $("userId")?.value.trim() || "system");
+  headers.set("X-User-Name", $("userName")?.value.trim() || "系统用户");
+  headers.set("X-User-Role", $("userRole")?.value.trim() || "admin");
+  const departmentId = $("departmentId")?.value.trim();
+  if (departmentId) {
+    headers.set("X-Department-Id", departmentId);
+  }
+  return { ...options, headers };
+}
+
+$("loginButton").addEventListener("click", async () => {
+  $("loginStatus").textContent = "正在登录...";
+  try {
+    const result = await api("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: $("loginUsername").value.trim(),
+        password: $("loginPassword").value,
+      }),
+    });
+    accessToken = result.access_token;
+    localStorage.setItem("accessToken", accessToken);
+    $("userId").value = result.user.id;
+    $("userName").value = result.user.name;
+    $("userRole").value = result.user.role;
+    $("departmentId").value = result.user.department_id || "";
+    $("loginStatus").textContent = `已登录：${result.user.name}`;
+  } catch (error) {
+    $("loginStatus").textContent = error.message;
+  }
+});
+
+$("logoutButton").addEventListener("click", () => {
+  accessToken = "";
+  localStorage.removeItem("accessToken");
+  $("loginStatus").textContent = "已退出登录";
+});
 
 async function loadConfig() {
   const config = await api("/api/config");
@@ -166,6 +211,7 @@ $("runEval").addEventListener("click", async () => {
       `${result.count} 条`,
       `答案关键词命中 ${formatMetric(result.avg_keyword_score)}`,
       `来源关键词覆盖 ${formatMetric(result.avg_source_keyword_score)}`,
+      `引用准确率 ${formatMetric(result.avg_citation_accuracy)}`,
       `召回命中率 ${formatMetric(result.retrieval_hit_rate)}`,
       `拒答率 ${formatMetric(result.refusal_rate)}`,
       `P95 耗时 ${formatMetric(fallbackLatency)} 毫秒`,

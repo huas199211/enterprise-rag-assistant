@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi.testclient import TestClient
 
@@ -18,6 +18,32 @@ class ApiTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(config, response.json())
+
+    def test_login_returns_access_token(self) -> None:
+        login = Mock(return_value={"access_token": "token", "token_type": "bearer", "user": {"id": "admin"}, "permissions": []})
+
+        with patch("app.api.routes.login", login):
+            response = self.client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("token", response.json()["access_token"])
+        login.assert_called_once_with("admin", "admin123")
+
+    def test_login_rejects_invalid_credentials(self) -> None:
+        with patch("app.api.routes.login", side_effect=ValueError("用户名或密码错误")):
+            response = self.client.post("/api/auth/login", json={"username": "admin", "password": "wrong"})
+
+        self.assertEqual(401, response.status_code)
+
+    def test_permission_required_for_non_admin_upload(self) -> None:
+        with patch("app.api.routes.user_permissions", return_value=[]):
+            response = self.client.post(
+                "/api/documents/upload",
+                headers={"X-User-Id": "u1", "X-User-Name": "zhangsan", "X-User-Role": "user", "X-Department-Id": "1"},
+                files={"file": ("制度.txt", b"test", "text/plain")},
+            )
+
+        self.assertEqual(403, response.status_code)
 
     def test_save_config_rejects_invalid_chunk_overlap(self) -> None:
         response = self.client.post("/api/config", json={"chunk_size": 500, "chunk_overlap": 500})
@@ -70,11 +96,12 @@ class ApiTest(unittest.TestCase):
     def test_list_documents_returns_repository_items(self) -> None:
         documents = [{"id": 1, "filename": "制度.txt", "status": "indexed"}]
 
-        with patch("app.api.routes.list_documents_repository", return_value=documents):
+        with patch("app.api.routes.list_documents_repository", return_value=documents) as list_documents_repository:
             response = self.client.get("/api/documents")
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(documents, response.json())
+        self.assertTrue(list_documents_repository.call_args.args[0].is_admin)
 
     def test_reindex_document_returns_result(self) -> None:
         result = {"document_id": 1, "filename": "制度.txt", "chunk_count": 2, "status": "indexed"}
@@ -87,11 +114,13 @@ class ApiTest(unittest.TestCase):
 
     def test_feedback_creates_record(self) -> None:
         with patch("app.api.routes.create_feedback") as create_feedback:
-            response = self.client.post("/api/feedback", json={"message_id": "m1", "rating": "up", "comment": "准确"})
+            with patch("app.api.routes.write_audit_log") as write_audit_log:
+                response = self.client.post("/api/feedback", json={"message_id": "m1", "rating": "up", "comment": "准确"})
 
         self.assertEqual(200, response.status_code)
         self.assertEqual({"ok": True}, response.json())
         create_feedback.assert_called_once_with("m1", "up", "准确")
+        self.assertTrue(write_audit_log.called)
 
     def test_logs_returns_repository_items(self) -> None:
         logs = [{"id": "m1", "question": "问题", "answer": "答案", "sources": []}]
@@ -123,6 +152,29 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(35, response.json()["count"])
         run_evaluation.assert_awaited_once()
+
+    def test_evaluate_compare_returns_strategy_results(self) -> None:
+        compare_evaluation_strategies = AsyncMock(return_value={"count": 2, "results": []})
+
+        with patch("app.api.routes.compare_evaluation_strategies", compare_evaluation_strategies):
+            response = self.client.post("/api/evaluate/compare")
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, response.json()["count"])
+
+    def test_access_control_routes_return_records(self) -> None:
+        with (
+            patch("app.api.routes.create_department", return_value={"id": 1, "name": "财务部"}),
+            patch("app.api.routes.create_user", return_value={"id": "u1", "name": "张三", "role": "user", "department_id": 1}),
+            patch("app.api.routes.list_audit_logs", return_value=[]),
+        ):
+            department_response = self.client.post("/api/departments", json={"name": "财务部"})
+            user_response = self.client.post("/api/users", json={"id": "u1", "name": "张三", "role": "user", "department_id": 1})
+            audit_response = self.client.get("/api/audit-logs")
+
+        self.assertEqual(200, department_response.status_code)
+        self.assertEqual(200, user_response.status_code)
+        self.assertEqual(200, audit_response.status_code)
 
 if __name__ == "__main__":
     unittest.main()

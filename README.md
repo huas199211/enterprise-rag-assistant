@@ -89,6 +89,8 @@ RERANK_MODEL=BAAI/bge-reranker-v2-m3
 
 ## API
 
+- `POST /api/auth/login` 登录，返回访问令牌
+- `GET /api/auth/me` 查看当前登录用户和权限
 - `POST /api/documents/upload` 上传并入库
 - `GET /api/documents` 查看文档
 - `POST /api/documents/{document_id}/reindex` 重建单个文档的向量索引
@@ -98,6 +100,26 @@ RERANK_MODEL=BAAI/bge-reranker-v2-m3
 - `POST /api/config` 更新配置
 - `GET /api/logs` 查看问答日志
 - `POST /api/evaluate` 运行评估集，返回关键词命中、来源覆盖、召回命中率、拒答率和耗时指标
+- `GET /api/audit-logs` 查看审计日志
+
+## 登录和权限
+
+开发环境默认管理员账号：
+
+```text
+用户名：admin
+密码：admin123
+```
+
+生产环境需要在 `.env` 中修改：
+
+```env
+AUTH_TOKEN_SECRET=请替换为高强度随机字符串
+DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_PASSWORD=请替换为强密码
+```
+
+系统内置用户、部门、岗位、角色、权限、用户角色、角色权限和审计日志表。普通用户按部门和文档可见范围隔离，管理员可访问全部文档。
 
 ## 测试和评估
 
@@ -106,7 +128,7 @@ python -m unittest discover -s tests
 python -c "import asyncio, json; from app.evaluation import run_evaluation; print(json.dumps(asyncio.run(run_evaluation()), ensure_ascii=False, indent=2))"
 ```
 
-当前测试覆盖基础分词、评估指标、本地/远程重排序回退、文档/反馈/日志数据访问层，以及配置、问答、上传、重建索引、反馈、评估等 API 路由。
+当前测试覆盖登录鉴权、基础分词、评估指标、本地/远程重排序回退、文档/反馈/日志数据访问层，以及配置、问答、上传、重建索引、反馈、评估等 API 路由。
 
 ## 演示问题
 

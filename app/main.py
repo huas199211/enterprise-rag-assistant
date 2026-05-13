@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .api import router as api_router
 from .db import init_db
+from .repositories import seed_default_auth_data
 
 
 app = FastAPI(title="企业知识库智能助手")
@@ -14,6 +15,7 @@ app.include_router(api_router)
 @app.on_event("startup")
 def startup() -> None:
     init_db()
+    seed_default_auth_data()
 
 
 @app.get("/")

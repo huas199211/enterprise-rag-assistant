@@ -45,6 +45,23 @@
         </section>
 
         <section class="panel">
+          <h2>登录</h2>
+          <label>用户名 <input id="loginUsername" type="text" value="admin" /></label>
+          <label>密码 <input id="loginPassword" type="password" value="admin123" /></label>
+          <button id="loginButton" type="button">登录</button>
+          <button id="logoutButton" class="secondary" type="button">退出</button>
+          <div id="loginStatus" class="muted"></div>
+        </section>
+
+        <section class="panel">
+          <h2>访问上下文</h2>
+          <label>用户 ID <input id="userId" type="text" value="system" /></label>
+          <label>用户姓名 <input id="userName" type="text" value="系统用户" /></label>
+          <label>用户角色 <input id="userRole" type="text" value="admin" /></label>
+          <label>部门 ID <input id="departmentId" type="number" min="1" /></label>
+        </section>
+
+        <section class="panel">
           <h2>质量评估</h2>
           <button id="runEval">运行测试集</button>
           <div id="evalResult" class="muted"></div>

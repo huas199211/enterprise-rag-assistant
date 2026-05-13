@@ -16,6 +16,43 @@ class FeedbackRequest(BaseModel):
     comment: str = ""
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(min_length=1)
+    password: str = Field(min_length=1)
+
+
+class DepartmentCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class UserCreate(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
+    username: str | None = Field(default=None, min_length=1, max_length=100)
+    password: str | None = Field(default=None, min_length=6, max_length=200)
+    name: str = Field(min_length=1, max_length=100)
+    role: str = Field(default="user", pattern="^(admin|owner|system|manager|user)$")
+    department_id: int | None = Field(default=None, ge=1)
+    position_id: int | None = Field(default=None, ge=1)
+
+
+class RoleCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100)
+    description: str = ""
+
+
+class PermissionCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=100)
+    description: str = ""
+
+
+class PositionCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    department_id: int | None = Field(default=None, ge=1)
+    description: str = ""
+
+
 class ConfigUpdate(BaseModel):
     chunk_size: int | None = Field(default=None, ge=100, le=3000)
     chunk_overlap: int | None = Field(default=None, ge=0, le=800)

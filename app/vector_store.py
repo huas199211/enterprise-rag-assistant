@@ -56,21 +56,30 @@ class VectorStore:
             ],
         )
 
-    def search(self, query: str, top_k: int, rerank: bool = False) -> list[SearchHit]:
+    def search(
+        self,
+        query: str,
+        top_k: int,
+        rerank: bool = False,
+        document_ids: list[int] | None = None,
+    ) -> list[SearchHit]:
+        if document_ids == []:
+            return []
         config = get_runtime_config()
         candidate_multiplier = int(config["vector_candidate_multiplier"])
         candidate_limit = max(top_k * candidate_multiplier, top_k)
-        vector_hits = self._vector_search(query, candidate_limit)
-        bm25_hits = self._bm25_search(query, candidate_limit)
+        vector_hits = self._vector_search(query, candidate_limit, document_ids)
+        bm25_hits = self._bm25_search(query, candidate_limit, document_ids)
         hits = self._hybrid_fuse(vector_hits, bm25_hits, config)
         if rerank:
             hits = rerank_hits(query, hits, config)
         return hits[:top_k]
 
-    def _vector_search(self, query: str, limit: int) -> list[SearchHit]:
+    def _vector_search(self, query: str, limit: int, document_ids: list[int] | None) -> list[SearchHit]:
         response = self.client.query_points(
             collection_name=self.collection,
             query=embed_text(query),
+            query_filter=_document_filter(document_ids),
             limit=limit,
             with_payload=True,
         )
@@ -87,15 +96,21 @@ class VectorStore:
             )
         return hits
 
-    def _bm25_search(self, query: str, limit: int) -> list[SearchHit]:
+    def _bm25_search(self, query: str, limit: int, document_ids: list[int] | None) -> list[SearchHit]:
         query_terms = Counter(tokenize(query))
         if not query_terms:
             return []
 
         with db() as conn:
-            rows = conn.execute(
-                text("select id, text, metadata_json from chunks order by created_at desc")
-            ).mappings().fetchall()
+            if document_ids is None:
+                rows = conn.execute(
+                    text("select id, text, metadata_json from chunks order by created_at desc")
+                ).mappings().fetchall()
+            else:
+                rows = conn.execute(
+                    text("select id, text, metadata_json from chunks where document_id = any(:document_ids) order by created_at desc"),
+                    {"document_ids": document_ids},
+                ).mappings().fetchall()
         if not rows:
             return []
 
@@ -205,3 +220,16 @@ def _normalize_scores(hits: list[SearchHit]) -> dict[str, float]:
     if max_score <= 0:
         return {hit.chunk_id: 0.0 for hit in hits}
     return {hit.chunk_id: max(0.0, hit.score / max_score) for hit in hits}
+
+
+def _document_filter(document_ids: list[int] | None) -> models.Filter | None:
+    if document_ids is None:
+        return None
+    return models.Filter(
+        must=[
+            models.FieldCondition(
+                key="document_id",
+                match=models.MatchAny(any=document_ids),
+            )
+        ]
+    )

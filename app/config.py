@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     embedding_timeout_seconds: int = 60
     local_no_proxy_hosts: str = "127.0.0.1,localhost,::1"
 
+    auth_token_secret: str = "dev-only-change-me"
+    access_token_ttl_minutes: int = 720
+    default_admin_username: str = "admin"
+    default_admin_password: str = "admin123"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
