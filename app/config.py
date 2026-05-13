@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     embedding_timeout_seconds: int = 60
     local_no_proxy_hosts: str = "127.0.0.1,localhost,::1"
+    cors_allowed_origins: str = "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000"
 
     auth_token_secret: str = "dev-only-change-me"
     access_token_ttl_minutes: int = 720

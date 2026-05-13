@@ -18,10 +18,48 @@
 - 答案反馈按钮
 - `data/eval_set.jsonl` 内置 35 条评估样例
 
-## 快速启动
+## 项目结构
+
+```text
+app/        FastAPI 后端 API、服务层、仓储层和 RAG 链路
+frontend/   Vue 3 + Vite 前端工作台，生产环境由 Nginx 承载
+docs/       基础设施和模型接入说明
+migrations/ Alembic 数据库迁移
+tests/      单元测试和 API 测试
+data/       示例知识库和评估集
+```
+
+## Docker 一键启动
+
+先准备环境变量：
 
 ```powershell
-docker compose up -d
+copy .env.example .env
+```
+
+然后启动完整环境：
+
+```powershell
+docker compose up -d --build
+```
+
+访问地址：
+
+```text
+前端工作台: http://127.0.0.1:5173
+后端 API:   http://127.0.0.1:8000
+Qdrant:     http://127.0.0.1:6333/dashboard
+Adminer:    http://127.0.0.1:8080
+```
+
+`frontend` 容器使用 Nginx 承载 Vue 构建产物，并把 `/api` 反向代理到 `backend:8000`。`backend` 容器启动时会先执行 `alembic upgrade head`，再启动 FastAPI。
+
+## 本地开发启动
+
+后端：
+
+```powershell
+docker compose up -d postgres qdrant adminer
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
@@ -30,10 +68,12 @@ python -m alembic upgrade head
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-打开：
+前端：
 
-```text
-http://127.0.0.1:8000
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
 ## 基础设施

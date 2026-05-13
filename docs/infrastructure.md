@@ -1,6 +1,6 @@
 # 基础设施
 
-本项目本地开发环境使用 Docker Compose 启动基础组件。
+本项目使用 Docker Compose 启动前端、后端和基础组件。
 
 ## 组件
 
@@ -9,6 +9,8 @@
 | PostgreSQL | 5432 | 业务数据库，保存文档、会话、日志、反馈、评估结果 |
 | Qdrant | 6333 | 向量数据库，保存 chunk embedding 和检索 payload |
 | Adminer | 8080 | PostgreSQL 可视化管理页面 |
+| Backend | 8000 | FastAPI 后端 API |
+| Frontend | 5173 | Vue 前端工作台，Nginx 反向代理 `/api` |
 
 ## 启动
 
@@ -22,6 +24,8 @@ docker compose up -d
 docker compose ps
 docker exec rag-postgres pg_isready -U rag -d rag
 Invoke-WebRequest http://127.0.0.1:6333/collections
+Invoke-WebRequest http://127.0.0.1:8000/
+Invoke-WebRequest http://127.0.0.1:5173/
 ```
 
 ## Adminer 登录
@@ -48,4 +52,4 @@ Database: rag
 
 - PostgreSQL 管理结构化业务数据。
 - Qdrant 管理向量索引和相似度检索。
-- Docker Compose 固定依赖版本，保证项目可以复现和演示。
+- Docker Compose 固定依赖版本，前端、后端和基础设施可以一键复现和演示。
