@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     conversation_title_length: int = 40
     error_message_max_length: int = 2000
     dedupe_key_length: int = 500
+    max_log_limit: int = 200
 
     llm_timeout_seconds: int = 60
     llm_temperature: float = 0.2

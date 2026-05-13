@@ -1,11 +1,9 @@
-import json
-
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from sqlalchemy import text
 
-from ..db import db, get_runtime_config, row_to_dict, update_runtime_config, utc_now
+from ..db import get_runtime_config, update_runtime_config
 from ..evaluation import run_evaluation
 from ..rag import answer_question, ingest_upload, reindex_document
+from ..repositories import create_feedback, list_documents as list_documents_repository, list_message_logs
 from ..schemas import ChatRequest, ConfigUpdate, FeedbackRequest
 
 
@@ -22,9 +20,7 @@ async def upload_document(file: UploadFile = File(...)):
 
 @router.get("/documents")
 def list_documents():
-    with db() as conn:
-        rows = conn.execute(text("select * from documents order by created_at desc")).fetchall()
-    return [row_to_dict(row) for row in rows]
+    return list_documents_repository()
 
 
 @router.post("/documents/{document_id}/reindex")
@@ -42,16 +38,7 @@ async def chat(payload: ChatRequest):
 
 @router.post("/feedback")
 def feedback(payload: FeedbackRequest):
-    with db() as conn:
-        conn.execute(
-            text("insert into feedback(message_id, rating, comment, created_at) values(:message_id, :rating, :comment, :created_at)"),
-            {
-                "message_id": payload.message_id,
-                "rating": payload.rating,
-                "comment": payload.comment,
-                "created_at": utc_now(),
-            },
-        )
+    create_feedback(payload.message_id, payload.rating, payload.comment)
     return {"ok": True}
 
 
@@ -70,17 +57,7 @@ def save_config(payload: ConfigUpdate):
 
 @router.get("/logs")
 def logs(limit: int = 50):
-    with db() as conn:
-        rows = conn.execute(
-            text("select * from messages order by created_at desc limit :limit"),
-            {"limit": min(limit, 200)},
-        ).fetchall()
-    items = []
-    for row in rows:
-        item = row_to_dict(row)
-        item["sources"] = json.loads(item.pop("sources_json"))
-        items.append(item)
-    return items
+    return list_message_logs(limit)
 
 
 @router.post("/evaluate")

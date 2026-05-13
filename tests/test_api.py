@@ -1,6 +1,5 @@
 import unittest
-from contextlib import contextmanager
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -68,6 +67,15 @@ class ApiTest(unittest.TestCase):
         self.assertEqual("indexed", response.json()["status"])
         ingest_upload.assert_awaited_once()
 
+    def test_list_documents_returns_repository_items(self) -> None:
+        documents = [{"id": 1, "filename": "制度.txt", "status": "indexed"}]
+
+        with patch("app.api.routes.list_documents_repository", return_value=documents):
+            response = self.client.get("/api/documents")
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(documents, response.json())
+
     def test_reindex_document_returns_result(self) -> None:
         result = {"document_id": 1, "filename": "制度.txt", "chunk_count": 2, "status": "indexed"}
 
@@ -77,15 +85,23 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(result, response.json())
 
-    def test_feedback_writes_record(self) -> None:
-        fake_conn = Mock()
-
-        with patch("app.api.routes.db", _fake_db(fake_conn)):
+    def test_feedback_creates_record(self) -> None:
+        with patch("app.api.routes.create_feedback") as create_feedback:
             response = self.client.post("/api/feedback", json={"message_id": "m1", "rating": "up", "comment": "准确"})
 
         self.assertEqual(200, response.status_code)
         self.assertEqual({"ok": True}, response.json())
-        self.assertTrue(fake_conn.execute.called)
+        create_feedback.assert_called_once_with("m1", "up", "准确")
+
+    def test_logs_returns_repository_items(self) -> None:
+        logs = [{"id": "m1", "question": "问题", "answer": "答案", "sources": []}]
+
+        with patch("app.api.routes.list_message_logs", return_value=logs) as list_message_logs:
+            response = self.client.get("/api/logs?limit=10")
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(logs, response.json())
+        list_message_logs.assert_called_once_with(10)
 
     def test_evaluate_returns_metrics(self) -> None:
         run_evaluation = AsyncMock(
@@ -107,15 +123,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(35, response.json()["count"])
         run_evaluation.assert_awaited_once()
-
-
-def _fake_db(fake_conn):
-    @contextmanager
-    def manager():
-        yield fake_conn
-
-    return manager
-
 
 if __name__ == "__main__":
     unittest.main()

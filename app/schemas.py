@@ -46,6 +46,7 @@ class ConfigUpdate(BaseModel):
     conversation_title_length: int | None = Field(default=None, ge=10, le=200)
     error_message_max_length: int | None = Field(default=None, ge=100, le=10000)
     dedupe_key_length: int | None = Field(default=None, ge=50, le=2000)
+    max_log_limit: int | None = Field(default=None, ge=1, le=1000)
     llm_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
     llm_temperature: float | None = Field(default=None, ge=0, le=2)
     embedding_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
