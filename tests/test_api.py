@@ -14,7 +14,7 @@ class ApiTest(unittest.TestCase):
     def test_get_config_returns_runtime_config(self) -> None:
         config = {"top_k": 5, "min_score": 0.08, "rerank_provider": "local"}
 
-        with patch("app.main.get_runtime_config", return_value=config):
+        with patch("app.api.routes.get_runtime_config", return_value=config):
             response = self.client.get("/api/config")
 
         self.assertEqual(200, response.status_code)
@@ -29,7 +29,7 @@ class ApiTest(unittest.TestCase):
     def test_save_config_updates_runtime_config(self) -> None:
         updated = {"top_k": 8, "rerank": True}
 
-        with patch("app.main.update_runtime_config", return_value=updated) as update_runtime_config:
+        with patch("app.api.routes.update_runtime_config", return_value=updated) as update_runtime_config:
             response = self.client.post("/api/config", json=updated)
 
         self.assertEqual(200, response.status_code)
@@ -48,7 +48,7 @@ class ApiTest(unittest.TestCase):
             }
         )
 
-        with patch("app.main.answer_question", answer_question):
+        with patch("app.api.routes.answer_question", answer_question):
             response = self.client.post("/api/chat", json={"question": "出差前需要提交什么？"})
 
         self.assertEqual(200, response.status_code)
@@ -58,7 +58,7 @@ class ApiTest(unittest.TestCase):
     def test_upload_document_returns_ingest_result(self) -> None:
         ingest_upload = AsyncMock(return_value={"document_id": 1, "filename": "制度.txt", "chunk_count": 1, "status": "indexed"})
 
-        with patch("app.main.ingest_upload", ingest_upload):
+        with patch("app.api.routes.ingest_upload", ingest_upload):
             response = self.client.post(
                 "/api/documents/upload",
                 files={"file": ("制度.txt", b"test", "text/plain")},
@@ -71,7 +71,7 @@ class ApiTest(unittest.TestCase):
     def test_reindex_document_returns_result(self) -> None:
         result = {"document_id": 1, "filename": "制度.txt", "chunk_count": 2, "status": "indexed"}
 
-        with patch("app.main.reindex_document", return_value=result):
+        with patch("app.api.routes.reindex_document", return_value=result):
             response = self.client.post("/api/documents/1/reindex")
 
         self.assertEqual(200, response.status_code)
@@ -80,7 +80,7 @@ class ApiTest(unittest.TestCase):
     def test_feedback_writes_record(self) -> None:
         fake_conn = Mock()
 
-        with patch("app.main.db", _fake_db(fake_conn)):
+        with patch("app.api.routes.db", _fake_db(fake_conn)):
             response = self.client.post("/api/feedback", json={"message_id": "m1", "rating": "up", "comment": "准确"})
 
         self.assertEqual(200, response.status_code)
@@ -101,7 +101,7 @@ class ApiTest(unittest.TestCase):
             }
         )
 
-        with patch("app.main.run_evaluation", run_evaluation):
+        with patch("app.api.routes.run_evaluation", run_evaluation):
             response = self.client.post("/api/evaluate")
 
         self.assertEqual(200, response.status_code)
