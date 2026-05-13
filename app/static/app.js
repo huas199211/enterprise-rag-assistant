@@ -43,7 +43,7 @@ async function loadLogs() {
     <div class="log">
       <strong>${escapeHtml(item.question)}</strong>
       <p>${escapeHtml(item.answer).slice(0, 220)}</p>
-      <p>${item.latency_ms} ms · ${new Date(item.created_at).toLocaleString()}</p>
+      <p>${item.latency_ms} 毫秒 · ${new Date(item.created_at).toLocaleString()}</p>
     </div>
   `).join("") || '<p class="muted">暂无记录</p>';
 }
@@ -119,7 +119,7 @@ $("askButton").addEventListener("click", async () => {
     conversationId = result.conversation_id;
     currentMessageId = result.message_id;
     $("answer").textContent = result.answer;
-    $("latency").textContent = `${result.latency_ms} ms`;
+    $("latency").textContent = `${result.latency_ms} 毫秒`;
     $("feedbackButtons").classList.remove("hidden");
     renderSources(result.sources);
     await loadLogs();
@@ -155,7 +155,7 @@ $("runEval").addEventListener("click", async () => {
   $("evalResult").textContent = "正在运行评估...";
   try {
     const result = await api("/api/evaluate", { method: "POST" });
-    $("evalResult").textContent = `${result.count} 条，平均关键词命中 ${result.avg_keyword_score}，耗时 ${result.latency_ms} ms`;
+    $("evalResult").textContent = `${result.count} 条，平均关键词命中 ${result.avg_keyword_score}，耗时 ${result.latency_ms} 毫秒`;
   } catch (error) {
     $("evalResult").textContent = error.message;
   }
@@ -164,7 +164,7 @@ $("runEval").addEventListener("click", async () => {
 function renderSources(sources) {
   $("sources").innerHTML = sources.map((source, index) => `
     <div class="source">
-      <strong>[${index + 1}] ${escapeHtml(source.metadata.filename)} · score ${source.score.toFixed(3)}</strong>
+      <strong>[${index + 1}] ${escapeHtml(source.metadata.filename)} · 相关度 ${source.score.toFixed(3)}</strong>
       <p>${escapeHtml(source.text).slice(0, 700)}</p>
     </div>
   `).join("") || '<p class="muted">没有召回来源片段</p>';

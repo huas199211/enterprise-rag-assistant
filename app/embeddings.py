@@ -52,7 +52,8 @@ def _openai_compatible_embed(text: str, model: str, dimensions: int) -> list[flo
     payload: dict[str, object] = {"model": model, "input": text}
     if model.startswith("text-embedding-3"):
         payload["dimensions"] = dimensions
-    with httpx.Client(timeout=60) as client:
+    config = _runtime_embedding_config()
+    with httpx.Client(timeout=int(config["embedding_timeout_seconds"])) as client:
         response = client.post(
             f"{settings.openai_base_url.rstrip('/')}/embeddings",
             headers={"Authorization": f"Bearer {settings.openai_api_key}"},
@@ -85,6 +86,7 @@ def _runtime_embedding_config() -> dict[str, object]:
         "embedding_provider": config.get("embedding_provider", settings.embedding_provider),
         "embedding_model": config.get("embedding_model", settings.embedding_model),
         "embedding_dimensions": config.get("embedding_dimensions", settings.embedding_dimensions),
+        "embedding_timeout_seconds": config.get("embedding_timeout_seconds", settings.embedding_timeout_seconds),
     }
 
 

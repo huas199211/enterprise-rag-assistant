@@ -11,7 +11,7 @@ from .rag import answer_question, ingest_upload, reindex_document
 from .schemas import ChatRequest, ConfigUpdate, FeedbackRequest
 
 
-app = FastAPI(title="Enterprise Knowledge Assistant")
+app = FastAPI(title="企业知识库智能助手")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
@@ -77,7 +77,7 @@ def config():
 def save_config(payload: ConfigUpdate):
     data = payload.clean()
     if "chunk_overlap" in data and "chunk_size" in data and data["chunk_overlap"] >= data["chunk_size"]:
-        raise HTTPException(status_code=400, detail="chunk_overlap 必须小于 chunk_size")
+        raise HTTPException(status_code=400, detail="片段重叠长度必须小于片段长度")
     return update_runtime_config(data)
 
 

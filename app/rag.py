@@ -22,7 +22,7 @@ async def ingest_upload(file: UploadFile) -> dict[str, Any]:
     config = get_runtime_config()
     os.makedirs(settings.upload_dir, exist_ok=True)
 
-    safe_name = Path(file.filename or "document").name
+    safe_name = Path(file.filename or "未命名文档").name
     target = os.path.join(settings.upload_dir, f"{uuid.uuid4().hex}_{safe_name}")
     with open(target, "wb") as f:
         shutil.copyfileobj(file.file, f)
@@ -192,7 +192,7 @@ def ensure_conversation(conversation_id: str, question: str) -> None:
             {"id": conversation_id},
         ).fetchone()
         if not exists:
-            title = question[:40]
+            title = question[: int(get_runtime_config()["conversation_title_length"])]
             conn.execute(
                 text("insert into conversations(id, title, created_at) values(:id, :title, :created_at)"),
                 {"id": conversation_id, "title": title, "created_at": utc_now()},
@@ -202,8 +202,8 @@ def ensure_conversation(conversation_id: str, question: str) -> None:
 def load_history(conversation_id: str) -> list[dict[str, Any]]:
     with db() as conn:
         rows = conn.execute(
-            text("select question, answer from messages where conversation_id = :conversation_id order by created_at asc limit 12"),
-            {"conversation_id": conversation_id},
+            text("select question, answer from messages where conversation_id = :conversation_id order by created_at asc limit :limit"),
+            {"conversation_id": conversation_id, "limit": int(get_runtime_config()["conversation_history_limit"])},
         ).mappings().fetchall()
     return [{"question": row["question"], "answer": row["answer"]} for row in rows]
 
@@ -212,7 +212,7 @@ def _update_document_status(document_id: int, status: str, error_message: str = 
     with db() as conn:
         conn.execute(
             text("update documents set status = :status, error_message = :error_message where id = :id"),
-            {"id": document_id, "status": status, "error_message": error_message[:2000]},
+            {"id": document_id, "status": status, "error_message": error_message[: int(get_runtime_config()["error_message_max_length"])]},
         )
 
 
@@ -220,7 +220,7 @@ def _dedupe_contexts(contexts: Iterable[dict[str, Any]]) -> list[dict[str, Any]]
     seen = set()
     unique = []
     for context in contexts:
-        key = " ".join(str(context["text"]).split())[:500]
+        key = " ".join(str(context["text"]).split())[: int(get_runtime_config()["dedupe_key_length"])]
         if key in seen:
             continue
         seen.add(key)

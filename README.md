@@ -1,21 +1,21 @@
 # 企业知识库智能助手
 
-这是一个面向企业内部知识库的 RAG 工具，不是单纯聊天机器人。它支持文档上传、切分、向量化、检索召回、可选 rerank、基于来源片段回答、多轮会话、后台参数配置、日志记录、反馈和评估集。
+这是一个面向企业内部知识库的检索增强问答工具，不是单纯聊天机器人。它支持文档上传、切分、向量化、检索召回、可选重排序、基于来源片段回答、多轮会话、后台参数配置、日志记录、反馈和评估集。
 
 ## 功能范围
 
 - 上传 PDF / Word / Markdown / TXT
-- 文档解析、chunk 切分、向量化、入库
+- 文档解析、片段切分、向量化、入库
 - PostgreSQL 保存文档、片段、会话、问答日志、反馈和配置
 - Qdrant 保存向量索引
-- 检索召回，支持简单 rerank
+- 检索召回，支持简单重排序
 - 基于检索片段回答，并返回引用来源
 - 无相关资料时明确回答不知道
 - 多轮会话
-- 后台配置 chunk size、topK、模型、embedding、rerank
+- 后台配置片段长度、召回数量、模型、向量化和重排序
 - 支持相似度阈值 `min_score`，低相关召回直接拒答
 - 记录问题、答案、检索片段、耗时
-- feedback 按钮
+- 答案反馈按钮
 - `data/eval_set.jsonl` 内置 35 条评估样例
 
 ## 快速启动
@@ -61,13 +61,13 @@ Database: rag
 ```env
 LLM_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://api.deepseek.com
-OPENAI_API_KEY=你的 DeepSeek API Key
+OPENAI_API_KEY=你的 DeepSeek 接口密钥
 CHAT_MODEL=deepseek-v4-flash
 ```
 
-## 中文 Embedding 配置
+## 中文向量模型配置
 
-中文知识库默认使用 `BAAI/bge-m3` 配置，维度 `1024`。开发环境可以使用 `local` fallback，生产环境可接入 OpenAI-compatible embedding 服务。
+中文知识库默认使用 `BAAI/bge-m3` 配置，维度 `1024`。开发环境可以使用本地备用向量化，生产环境可接入兼容 OpenAI 格式的向量服务。
 
 ```env
 EMBEDDING_PROVIDER=local
@@ -97,7 +97,7 @@ DEFAULT_MIN_SCORE=0.18
 
 ## 后续路线
 
-1. 增加 hybrid search：向量召回 + BM25。
-2. 接入真实 rerank 模型。
+1. 增加混合检索：向量召回 + BM25。
+2. 接入真实重排序模型。
 3. 完善评估指标：召回命中率、引用准确率、拒答率、耗时。
 4. 增加权限、部门知识库隔离、审计日志。

@@ -7,7 +7,7 @@
 ```env
 LLM_PROVIDER=openai_compatible
 OPENAI_BASE_URL=https://api.deepseek.com
-OPENAI_API_KEY=你的 DeepSeek API Key
+OPENAI_API_KEY=你的 DeepSeek 接口密钥
 CHAT_MODEL=deepseek-v4-flash
 ```
 
@@ -20,9 +20,9 @@ CHAT_MODEL=deepseek-v4-flash
 
 ## 常见错误
 
-- `402 Payment Required`：API Key 有效，但 DeepSeek 账户余额或计费状态不可用。
-- `401/403`：API Key 无效、权限不足或请求头配置错误。
+- `402`：接口密钥有效，但 DeepSeek 账户余额或计费状态不可用。
+- `401/403`：接口密钥无效、权限不足或请求头配置错误。
 
-## Embedding
+## 向量模型
 
-DeepSeek 主要用于聊天补全。本项目中文向量检索默认配置为 `BAAI/bge-m3`，维度 `1024`。开发环境使用本地 fallback，生产环境可以接入支持 `BAAI/bge-m3` 的 OpenAI-compatible embedding 服务。
+DeepSeek 主要用于聊天补全。本项目中文向量检索默认配置为 `BAAI/bge-m3`，维度 `1024`。开发环境使用本地备用向量化，生产环境可以接入支持 `BAAI/bge-m3` 且兼容 OpenAI 格式的向量服务。
