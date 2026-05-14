@@ -31,8 +31,6 @@ class Settings(BaseSettings):
     hybrid_bm25_weight: float = 0.3
     bm25_k1: float = 1.5
     bm25_b: float = 0.75
-    rerank_original_score_weight: float = 0.7
-    rerank_term_coverage_weight: float = 0.3
     rerank_provider: str = "remote"
     rerank_base_url: str = "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank"
     rerank_api_key: str = ""

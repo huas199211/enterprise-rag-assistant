@@ -80,15 +80,6 @@ async def run_evaluation(
     }
 
 
-async def compare_evaluation_strategies(path: str = "data/eval_set.jsonl") -> dict[str, Any]:
-    strategies = [
-        {"strategy_name": "不启用重排序", "rerank": False},
-        {"strategy_name": "本地重排序", "rerank": True},
-    ]
-    results = [await run_evaluation(path, rerank=item["rerank"], strategy_name=item["strategy_name"]) for item in strategies]
-    return {"count": len(results), "results": results}
-
-
 async def export_evaluation_report(
     path: str = "data/eval_set.jsonl",
     output_path: str = "data/evaluation_report.json",
