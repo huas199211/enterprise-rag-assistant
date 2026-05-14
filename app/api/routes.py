@@ -13,7 +13,7 @@ from ..config import get_settings
 from ..db import get_runtime_config, update_runtime_config
 from ..document_cleaner import CleaningPipeline, CleaningConfig
 from ..document_loaders import load_document
-from ..evaluation import compare_evaluation_strategies, export_evaluation_report, run_evaluation
+from ..evaluation import export_evaluation_report, run_evaluation
 from ..repositories import (
     assign_permission_to_role,
     assign_role_to_user,
@@ -211,14 +211,6 @@ def require_permission(context: RequestContext, permission_code: str) -> None:
 async def evaluate():
     try:
         return await run_evaluation()
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.post("/evaluate/compare")
-async def evaluate_compare():
-    try:
-        return await compare_evaluation_strategies()
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

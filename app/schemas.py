@@ -71,8 +71,6 @@ class ConfigUpdate(BaseModel):
     hybrid_bm25_weight: float | None = Field(default=None, ge=0, le=1)
     bm25_k1: float | None = Field(default=None, ge=0.1, le=5)
     bm25_b: float | None = Field(default=None, ge=0, le=1)
-    rerank_original_score_weight: float | None = Field(default=None, ge=0, le=1)
-    rerank_term_coverage_weight: float | None = Field(default=None, ge=0, le=1)
     rerank_provider: str | None = None
     rerank_base_url: str | None = None
     rerank_api_key: str | None = None

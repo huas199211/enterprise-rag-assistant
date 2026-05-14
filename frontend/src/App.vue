@@ -86,13 +86,6 @@
         <label>召回数量 <input v-model.number="config.top_k" type="number" min="1" max="20" /></label>
         <label>最低相关度 <input v-model.number="config.min_score" type="number" min="0" max="1" step="0.01" /></label>
         <label>对话模型 <input v-model.trim="config.chat_model" type="text" /></label>
-        <label>向量模型提供方 <input v-model.trim="config.embedding_provider" type="text" /></label>
-        <label>向量模型 <input v-model.trim="config.embedding_model" type="text" /></label>
-        <label>向量维度 <input v-model.number="config.embedding_dimensions" type="number" min="64" max="4096" /></label>
-        <label>重排序提供方 <input v-model.trim="config.rerank_provider" type="text" /></label>
-        <label>重排序接口地址 <input v-model.trim="config.rerank_base_url" type="text" /></label>
-        <label>重排序模型 <input v-model.trim="config.rerank_model" type="text" /></label>
-        <label class="check"><input v-model="config.rerank" type="checkbox" /> 启用重排序</label>
         <button type="button" @click="saveConfig">保存配置</button>
         <div class="muted">{{ configStatus }}</div>
       </section>
@@ -246,10 +239,6 @@ const config = reactive({
   embedding_provider: "",
   embedding_model: "",
   embedding_dimensions: 1024,
-  rerank_provider: "local",
-  rerank_base_url: "",
-  rerank_model: "",
-  rerank: false,
 });
 
 async function api(path, options = {}) {
