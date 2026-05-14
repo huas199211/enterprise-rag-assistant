@@ -39,20 +39,29 @@ def _local_rerank(query: str, hits: list[Any], config: dict[str, Any]) -> list[A
 def _remote_rerank(query: str, hits: list[Any], config: dict[str, Any]) -> list[Any]:
     settings = get_settings()
     base_url = str(config.get("rerank_base_url") or "").rstrip("/")
-    if not base_url or not settings.rerank_api_key:
+    api_key = str(config.get("rerank_api_key") or settings.rerank_api_key or "")
+    if not api_key:
+        api_key = str(config.get("embedding_api_key") or settings.embedding_api_key or "")
+    if not base_url or not api_key:
         return []
 
+    model = str(config.get("rerank_model", "qwen3-rerank"))
     payload = {
-        "model": str(config["rerank_model"]),
-        "query": query,
-        "documents": [hit.text for hit in hits],
-        "top_n": len(hits),
+        "model": model,
+        "input": {
+            "query": query,
+            "documents": [hit.text for hit in hits],
+        },
+        "parameters": {
+            "top_n": len(hits),
+            "return_documents": False,
+        },
     }
     try:
         with httpx.Client(timeout=int(config["rerank_timeout_seconds"])) as client:
             response = client.post(
-                f"{base_url}/rerank",
-                headers={"Authorization": f"Bearer {settings.rerank_api_key}"},
+                f"{base_url}/text-rerank",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json=payload,
             )
             response.raise_for_status()
@@ -60,17 +69,18 @@ def _remote_rerank(query: str, hits: list[Any], config: dict[str, Any]) -> list[
     except httpx.HTTPError:
         return []
 
+    results = data.get("output", {}).get("results", [])
     scored_hits = []
-    for item in data.get("results", []):
+    for item in results:
         index = int(item.get("index", -1))
         if index < 0 or index >= len(hits):
             continue
-        score = float(item.get("relevance_score", item.get("score", 0.0)))
+        score = float(item.get("relevance_score", 0.0))
         hit = hits[index]
         metadata = dict(hit.metadata)
         metadata["rerank"] = {
             "provider": "remote",
-            "model": str(config["rerank_model"]),
+            "model": model,
             "score": round(score, 6),
         }
         scored_hits.append(replace(hit, score=score, metadata=metadata))

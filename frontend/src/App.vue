@@ -36,7 +36,7 @@
         </form>
         <div class="muted">{{ uploadStatus }}</div>
         <div class="list">
-          <article v-for="doc in documents" :key="doc.id" class="doc">
+          <article v-for="doc in paginatedDocuments" :key="doc.id" class="doc">
             <strong>{{ doc.filename }}</strong>
             <p>{{ statusLabel(doc.status) }} · {{ doc.chunk_count }} 个片段 · {{ formatDate(doc.created_at) }}</p>
             <p v-if="doc.error_message" class="error">{{ doc.error_message }}</p>
@@ -45,6 +45,37 @@
             </button>
           </article>
           <p v-if="!documents.length" class="muted">暂无文档</p>
+          <div v-if="documents.length > docPageSize" class="pagination">
+            <button class="secondary inline" type="button" :disabled="docPage <= 1" @click="docPage--">上一页</button>
+            <span class="page-info">{{ docPage }} / {{ docTotalPages }}</span>
+            <button class="secondary inline" type="button" :disabled="docPage >= docTotalPages" @click="docPage++">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>文档清洗</h2>
+        <form @submit.prevent="runClean">
+          <input ref="cleanFileInputRef" type="file" accept=".pdf,.doc,.docx,.md,.markdown,.txt" @change="handleCleanFileChange" />
+          <div class="clean-toggles">
+            <label class="check"><input v-model="cleanConfig.encoding_fix" type="checkbox" /> 编码修复</label>
+            <label class="check"><input v-model="cleanConfig.text_normalize" type="checkbox" /> 格式统一</label>
+            <label class="check"><input v-model="cleanConfig.noise_filter" type="checkbox" /> 噪声过滤</label>
+            <label class="check"><input v-model="cleanConfig.sensitive_mask" type="checkbox" /> 敏感信息脱敏</label>
+            <label class="check"><input v-model="cleanConfig.deduplication" type="checkbox" /> 文档去重</label>
+            <label class="check"><input v-model="cleanConfig.table_preserve" type="checkbox" /> 表格保留</label>
+            <label class="check"><input v-model="cleanConfig.structure_parse" type="checkbox" /> 结构解析</label>
+          </div>
+          <button type="submit" :disabled="cleaning">{{ cleaning ? "清洗中..." : "开始清洗" }}</button>
+        </form>
+        <div class="muted">{{ cleanStatus }}</div>
+        <div v-if="cleanResult" class="clean-result">
+          <div class="clean-stats">
+            <span>原始 {{ cleanResult.original_length }} 字符 → 清洗后 {{ cleanResult.cleaned_length }} 字符</span>
+            <span v-if="cleanResult.stats">({{ Object.keys(cleanResult.stats).length }} 个处理步骤)</span>
+          </div>
+          <pre class="clean-preview">{{ cleanResult.preview }}</pre>
+          <button type="button" :disabled="!cleanResult.task_id" @click="downloadCleaned">下载清洗后文件</button>
         </div>
       </section>
 
@@ -171,6 +202,29 @@ const evaluating = ref(false);
 const loggingIn = ref(false);
 const reindexingId = ref(null);
 
+const docPage = ref(1);
+const docPageSize = 5;
+const docTotalPages = computed(() => Math.max(1, Math.ceil(documents.value.length / docPageSize)));
+const paginatedDocuments = computed(() => {
+  const start = (docPage.value - 1) * docPageSize;
+  return documents.value.slice(start, start + docPageSize);
+});
+
+const cleaning = ref(false);
+const cleanSelectedFile = ref(null);
+const cleanFileInputRef = ref(null);
+const cleanResult = ref(null);
+const cleanStatus = ref("");
+const cleanConfig = reactive({
+  encoding_fix: true,
+  text_normalize: true,
+  noise_filter: true,
+  sensitive_mask: true,
+  deduplication: true,
+  table_preserve: true,
+  structure_parse: true,
+});
+
 const loginForm = reactive({
   username: "admin",
   password: "admin123",
@@ -228,6 +282,7 @@ async function loadConfig() {
 
 async function loadDocuments() {
   documents.value = await api("/api/documents");
+  docPage.value = 1;
 }
 
 async function loadLogs() {
@@ -411,6 +466,59 @@ async function runEvaluation() {
     evalResult.value = error.message;
   } finally {
     evaluating.value = false;
+  }
+}
+
+function handleCleanFileChange(event) {
+  cleanSelectedFile.value = event.target.files?.[0] || null;
+  cleanResult.value = null;
+  cleanStatus.value = "";
+}
+
+async function runClean() {
+  if (!cleanSelectedFile.value) {
+    cleanStatus.value = "请先选择文件";
+    return;
+  }
+  cleaning.value = true;
+  cleanStatus.value = "正在清洗...";
+  cleanResult.value = null;
+  const formData = new FormData();
+  formData.append("file", cleanSelectedFile.value);
+  formData.append("enable_encoding_fix", String(cleanConfig.encoding_fix));
+  formData.append("enable_text_normalize", String(cleanConfig.text_normalize));
+  formData.append("enable_noise_filter", String(cleanConfig.noise_filter));
+  formData.append("enable_sensitive_mask", String(cleanConfig.sensitive_mask));
+  formData.append("enable_deduplication", String(cleanConfig.deduplication));
+  formData.append("enable_table_preserve", String(cleanConfig.table_preserve));
+  formData.append("enable_structure_parse", String(cleanConfig.structure_parse));
+  try {
+    const result = await api("/api/clean", { method: "POST", body: formData });
+    cleanResult.value = result;
+    cleanStatus.value = `清洗完成，共 ${result.cleaned_length} 字符`;
+  } catch (error) {
+    cleanStatus.value = error.message;
+  } finally {
+    cleaning.value = false;
+  }
+}
+
+async function downloadCleaned() {
+  if (!cleanResult.value?.task_id) return;
+  const url = `${API_BASE_URL}/api/clean/download/${cleanResult.value.task_id}`;
+  try {
+    const response = await fetch(url, withRequestContext());
+    if (!response.ok) throw new Error("下载失败");
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${cleanResult.value.original_filename.replace(/\.[^.]+$/, "")}_cleaned.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  } catch (error) {
+    cleanStatus.value = error.message;
   }
 }
 

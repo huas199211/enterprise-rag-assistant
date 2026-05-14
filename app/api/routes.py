@@ -1,6 +1,18 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+import io
+import json
+import os
+import shutil
+import uuid
+from pathlib import Path
+from typing import Any
 
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
+
+from ..config import get_settings
 from ..db import get_runtime_config, update_runtime_config
+from ..document_cleaner import CleaningPipeline, CleaningConfig
+from ..document_loaders import load_document
 from ..evaluation import compare_evaluation_strategies, export_evaluation_report, run_evaluation
 from ..repositories import (
     assign_permission_to_role,
@@ -217,3 +229,85 @@ async def evaluate_export():
         return await export_evaluation_report()
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ── 文档清洗 ──────────────────────────────────────────────────────────
+
+_clean_store: dict[str, dict[str, Any]] = {}
+
+
+@router.post("/clean")
+async def clean_document(
+    file: UploadFile = File(...),
+    enable_encoding_fix: str = Form("true"),
+    enable_noise_filter: str = Form("true"),
+    enable_sensitive_mask: str = Form("true"),
+    enable_deduplication: str = Form("true"),
+    enable_text_normalize: str = Form("true"),
+    enable_structure_parse: str = Form("true"),
+    enable_table_preserve: str = Form("true"),
+):
+    settings = get_settings()
+    os.makedirs(settings.upload_dir, exist_ok=True)
+
+    safe_name = Path(file.filename or "未命名文档").name
+    tmp_path = os.path.join(settings.upload_dir, f"_clean_{uuid.uuid4().hex}_{safe_name}")
+    with open(tmp_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        raw_text = load_document(tmp_path)
+    except Exception as exc:
+        os.remove(tmp_path)
+        raise HTTPException(status_code=400, detail=f"无法解析文件：{exc}") from exc
+
+    config = CleaningConfig(
+        enable_encoding_fix=enable_encoding_fix == "true",
+        enable_noise_filter=enable_noise_filter == "true",
+        enable_sensitive_mask=enable_sensitive_mask == "true",
+        enable_deduplication=enable_deduplication == "true",
+        enable_text_normalize=enable_text_normalize == "true",
+        enable_structure_parse=enable_structure_parse == "true",
+        enable_table_preserve=enable_table_preserve == "true",
+    )
+
+    pipeline = CleaningPipeline(config)
+    result = pipeline.run(raw_text, filename=safe_name)
+
+    task_id = uuid.uuid4().hex
+    _clean_store[task_id] = {
+        "original_filename": safe_name,
+        "cleaned_text": result.text,
+        "stats": result.stats,
+    }
+
+    os.remove(tmp_path)
+
+    return {
+        "task_id": task_id,
+        "original_filename": safe_name,
+        "original_length": len(raw_text),
+        "cleaned_length": len(result.text),
+        "preview": result.text[:2000],
+        "stats": result.stats,
+    }
+
+
+@router.get("/clean/download/{task_id}")
+async def download_cleaned(task_id: str):
+    entry = _clean_store.get(task_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="清洗结果已过期或不存在")
+
+    name = entry["original_filename"]
+    stem = Path(name).stem
+    content = entry["cleaned_text"]
+
+    return StreamingResponse(
+        io.BytesIO(content.encode("utf-8")),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{stem}_cleaned.txt"',
+            "Content-Length": str(len(content.encode("utf-8"))),
+        },
+    )

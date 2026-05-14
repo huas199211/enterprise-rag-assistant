@@ -64,9 +64,8 @@ class ConfigUpdate(BaseModel):
     embedding_provider: str | None = None
     embedding_model: str | None = None
     embedding_dimensions: int | None = Field(default=None, ge=64, le=4096)
-    bge_m3_use_fp16: bool | None = None
-    bge_m3_batch_size: int | None = Field(default=None, ge=1, le=128)
-    bge_m3_max_length: int | None = Field(default=None, ge=128, le=8192)
+    embedding_base_url: str | None = None
+    embedding_api_key: str | None = None
     vector_candidate_multiplier: int | None = Field(default=None, ge=1, le=20)
     hybrid_vector_weight: float | None = Field(default=None, ge=0, le=1)
     hybrid_bm25_weight: float | None = Field(default=None, ge=0, le=1)
@@ -76,6 +75,7 @@ class ConfigUpdate(BaseModel):
     rerank_term_coverage_weight: float | None = Field(default=None, ge=0, le=1)
     rerank_provider: str | None = None
     rerank_base_url: str | None = None
+    rerank_api_key: str | None = None
     rerank_model: str | None = None
     rerank_timeout_seconds: int | None = Field(default=None, ge=5, le=300)
     local_answer_min_score: float | None = Field(default=None, ge=0, le=1)

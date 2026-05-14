@@ -27,6 +27,19 @@ from ..text_splitter import split_text
 from ..vector_store import VectorStore
 
 
+def _fix_filename_encoding(filename: str) -> str:
+    try:
+        raw = filename.encode("latin-1")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return filename
+    for enc in ("utf-8", "gbk", "gb18030", "shift_jis", "euc-kr"):
+        try:
+            return raw.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return filename
+
+
 async def ingest_upload(file: UploadFile, context: RequestContext | None = None) -> dict[str, Any]:
     context = context or system_context()
     ensure_request_user(context)
@@ -35,6 +48,7 @@ async def ingest_upload(file: UploadFile, context: RequestContext | None = None)
     os.makedirs(settings.upload_dir, exist_ok=True)
 
     safe_name = Path(file.filename or "未命名文档").name
+    safe_name = _fix_filename_encoding(safe_name)
     target = os.path.join(settings.upload_dir, f"{uuid.uuid4().hex}_{safe_name}")
     with open(target, "wb") as f:
         shutil.copyfileobj(file.file, f)
