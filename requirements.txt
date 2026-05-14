@@ -9,5 +9,3 @@ sqlalchemy==2.0.45
 psycopg[binary]==3.3.2
 qdrant-client==1.16.2
 alembic==1.17.2
-torch==2.11.0
-transformers==5.8.1

@@ -15,12 +15,10 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: str = ""
     chat_model: str = "gpt-4.1-mini"
-    embedding_provider: str = "local"
-    embedding_model: str = "BAAI/bge-m3"
+    embedding_model: str = "text-embedding-v3"
     embedding_dimensions: int = 1024
-    bge_m3_use_fp16: bool = False
-    bge_m3_batch_size: int = 12
-    bge_m3_max_length: int = 8192
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
 
     default_chunk_size: int = 800
     default_chunk_overlap: int = 120
@@ -35,10 +33,10 @@ class Settings(BaseSettings):
     bm25_b: float = 0.75
     rerank_original_score_weight: float = 0.7
     rerank_term_coverage_weight: float = 0.3
-    rerank_provider: str = "local"
-    rerank_base_url: str = ""
+    rerank_provider: str = "remote"
+    rerank_base_url: str = "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank"
     rerank_api_key: str = ""
-    rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    rerank_model: str = "qwen3-rerank"
     rerank_timeout_seconds: int = 30
 
     local_answer_min_score: float = 0.08
@@ -55,6 +53,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.2
     embedding_timeout_seconds: int = 60
     local_no_proxy_hosts: str = "127.0.0.1,localhost,::1"
+    cors_allowed_origins: str = "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000"
 
     auth_token_secret: str = "dev-only-change-me"
     access_token_ttl_minutes: int = 720

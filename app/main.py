@@ -1,14 +1,21 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from .api import router as api_router
+from .config import get_settings
 from .db import init_db
 from .repositories import seed_default_auth_data
 
 
 app = FastAPI(title="企业知识库智能助手")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+settings = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in settings.cors_allowed_origins.split(",") if origin.strip()],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(api_router)
 
 
@@ -19,5 +26,5 @@ def startup() -> None:
 
 
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse("app/static/index.html")
+def index() -> dict[str, str]:
+    return {"name": settings.app_name, "status": "ok"}
